@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#d4af37">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="موسوعة الوائلي">
+<title>أرشيف وموسوعة الشيخ أحمد الوائلي (رحمه الله)</title>
+<style>
+  :root {
+    --bg: #0f1419; --surface: #182028; --surface-2: #222d38;
+    --gold: #d4af37; --gold-soft: rgba(212, 175, 55, 0.14);
+    --text: #f3f5f7; --muted: #9aa7b4; --border: rgba(255, 255, 255, 0.08); --danger: #e05252;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif; }
+  body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 92px; }
+  header { background: linear-gradient(160deg, #1b2631 0%, #10161d 100%); border-bottom: 1px solid var(--border); padding: 18px 16px 20px; }
+  .top-meta { display: flex; justify-content: flex-start; align-items: center; font-size: 12px; color: var(--gold); margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+  .hero-title { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
+  .hero-sub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
+  .dev-badge { background: var(--gold-soft); border: 1px solid rgba(212, 175, 55, 0.35); color: var(--text); padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+  .dual-portraits { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .portrait-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px; text-align: center; cursor: pointer; }
+  .portrait-frame { width: 84px; height: 84px; margin: 0 auto 8px; border-radius: 50%; border: 2px solid var(--gold); overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--surface-2); font-size: 18px; color: var(--gold); font-weight: 700; }
+  .portrait-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .portrait-label { font-size: 12px; font-weight: 600; }
+  .portrait-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .toolbar { padding: 14px 16px 6px; display: flex; flex-direction: column; gap: 10px; }
+  .search-input { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; outline: none; }
+  .search-input:focus { border-color: var(--gold); }
+  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { padding: 10px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; }
+  .btn-gold { background: var(--gold); color: #111; border-color: var(--gold); }
+  .btn-danger { background: rgba(224, 82, 82, 0.14); color: #ff8585; border-color: rgba(224, 82, 82, 0.35); }
+  .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat-chip { white-space: nowrap; padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 13px; cursor: pointer; }
+  .cat-chip.active { background: var(--gold); color: #111; border-color: var(--gold); font-weight: 700; }
+  .list { padding: 8px 16px 24px; display: flex; flex-direction: column; gap: 12px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 14px; }
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+  .card-cat { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); font-weight: 600; }
+  .card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+  .card-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
+  .card-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; display: block; }
+  .card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .fav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
+  .player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #121820; border-top: 1px solid rgba(212, 175, 55, 0.35); padding: 10px 14px; display: none; align-items: center; gap: 10px; z-index: 40; }
+  .player-bar.show { display: flex; }
+  .player-info { flex: 1; min-width: 0; }
+  .player-title { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .player-sub { font-size: 11px; color: var(--gold); }
+  .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.72); display: none; align-items: center; justify-content: center; padding: 16px; z-index: 60; }
+  .modal-backdrop.show { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 100%; max-width: 480px; max-height: 88vh; overflow-y: auto; padding: 18px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 14px; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+  .field input, .field select, .field textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font-size: 14px; }
+  .field textarea { min-height: 84px; resize: vertical; }
+  .modal-footer { display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px; }
+  .empty { text-align: center; color: var(--muted); padding: 36px 16px; font-size: 14px; }
+  .toast { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); background: var(--surface-2); border: 1px solid var(--gold); color: var(--text); padding: 9px 16px; border-radius: 10px; font-size: 13px; z-index: 90; display: none; }
+  .toast.show { display: block; }
+</style>
+</head>
+<body>
+<div class="toast" id="toast"></div>
+<header>
+  <div class="top-meta"><span>أرشيف وموسوعة الشيخ أحمد الوائلي (رحمه الله)</span></div>
+  <div class="hero-title">الذاكرة الفكرية والمنبرية للشيخ أحمد الوائلي</div>
+  <div class="hero-sub">منصة منظمة لحفظ الكتب والبحوث والصور والمحاضرات والتسجيلات الصوتية.</div>
+  <div class="dev-badge">إعداد وتطوير : المهندس عباس هاني عويد الشويلي</div>
+  <div class="dual-portraits">
+    <div class="portrait-box" onclick="document.getElementById('waeliPhotoInput').click()">
+      <div class="portrait-frame" id="waeliFrame"><span>الوائلي</span></div>
+      <div class="portrait-label">الشيخ أحمد الوائلي</div>
+      <div class="portrait-hint">اضغط لتغيير الصورة</div>
+      <input type="file" id="waeliPhotoInput" accept="image/*" hidden>
+    </div>
+    <div class="portrait-box" onclick="document.getElementById('devPhotoInput').click()">
+      <div class="portrait-frame" id="devFrame"><span>م. عباس</span></div>
+      <div class="portrait-label">م. عباس هاني الشويلي</div>
+      <div class="portrait-hint">اضغط لتغيير صورتك</div>
+      <input type="file" id="devPhotoInput" accept="image/*" hidden>
+    </div>
+  </div>
+</header>
+<div class="toolbar">
+  <input type="search" class="search-input" id="searchInput" placeholder="ابحث بالعنوان، الوصف، أو الكلمات المفتاحية...">
+  <div class="action-row">
+    <button class="btn btn-gold" onclick="openItemModal()">+ إضافة مادة جديدة</button>
+    <button class="btn" onclick="openBackupModal()">النسخ الاحتياطي</button>
+  </div>
+</div>
+<div class="cats" id="catsBar"></div>
+<div class="list" id="itemsList"></div>
+<div class="player-bar" id="playerBar">
+  <div class="player-info">
+    <div class="player-title" id="playerTitle">تشغيل صوتي</div>
+    <div class="player-sub" id="playerStatus">جاهز</div>
+  </div>
+  <button class="btn btn-sm btn-gold" id="togglePlayBtn" onclick="togglePlay()">إيقاف/تشغيل</button>
+  <button class="btn btn-sm" onclick="closePlayer()">إغلاق</button>
+  <audio id="audioEl"></audio>
+</div>
+
+<div class="modal-backdrop" id="itemModal">
+  <div class="modal">
+    <div class="modal-title" id="itemModalTitle">إضافة مادة جديدة</div>
+    <input type="hidden" id="editId">
+    <div class="field"><label>القسم</label><select id="itemCat"><option value="الكتب">الكتب</option><option value="البحوث">البحوث</option><option value="الصور">الصور</option><option value="المحاضرات">المحاضرات</option><option value="التسجيلات">التسجيلات</option></select></div>
+    <div class="field"><label>العنوان</label><input type="text" id="itemTitle" placeholder="مثال: هوية التشيع / محاضرة في الفكر الإسلامي"></div>
+    <div class="field"><label>الوصف أو ملخص المحتوى</label><textarea id="itemDesc" placeholder="اكتب نبذة أو ملاحظات أو نصاً مختصراً..."></textarea></div>
+    <div class="field"><label>رابط الملف أو الصوت أو الصورة (اختياري)</label><input type="url" id="itemUrl" placeholder="https://..."></div>
+    <div class="field"><label>أو اختر صورة من الهاتف (للمحاضرات أو الصور)</label><input type="file" id="itemImgFile" accept="image/*"></div>
+    <div class="field"><label>كلمات مفتاحية (مفصولة بفاصلة)</label><input type="text" id="itemTags" placeholder="أدب، عقيدة، منبر، تاريخ"></div>
+    <div class="modal-footer"><button class="btn" onclick="closeItemModal()">إلغاء</button><button class="btn btn-gold" onclick="saveItem()">حفظ</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="backupModal">
+  <div class="modal">
+    <div class="modal-title">النسخ الاحتياطي واستعادة البيانات</div>
+    <p class="card-desc">احفظ نسخة JSON كاملة من المواد المضافة والصور المختارة، أو استعد نسخة سابقة في أي وقت.</p>
+    <div class="action-row" style="margin-bottom:14px;">
+      <button class="btn btn-gold" onclick="exportBackup()">تصدير نسخة احتياطية</button>
+      <button class="btn" onclick="document.getElementById('importFileInput').click()">استيراد نسخة</button>
+      <input type="file" id="importFileInput" accept=".json,application/json" hidden>
+    </div>
+    <div class="field"><label>نص النسخة الاحتياطية (للمعاينة أو النسخ المباشر)</label><textarea id="backupText" readonly></textarea></div>
+    <div class="modal-footer"><button class="btn" onclick="closeBackupModal()">إغلاق</button></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = 'waeli_archive_v7';
+const PORTRAITS_KEY = 'waeli_portraits_v7';
+const CATEGORIES = ['الكل', 'المفضلة', 'الكتب', 'البحوث', 'الصور', 'المحاضرات', 'التسجيلات'];
+const DEFAULT_ITEMS = [
+  { id: '1', category: 'الكتب', title: 'هوية التشيع', desc: 'من أبرز مؤلفات الشيخ أحمد الوائلي في تحليل الجذور الفكرية والتاريخية والاجتماعية.', url: '', image: '', tags: 'كتب، فكر، تاريخ', fav: true },
+  { id: '2', category: 'البحوث', title: 'المنهج الخطابي عند الشيخ الوائلي', desc: 'دراسة حول الجمع بين البلاغة الأدبية والعمق المعرفي والمقاربة الموضوعية في الخطاب المنبري.', url: '', image: '', tags: 'بحوث، أدب، خطاب', fav: false },
+  { id: '3', category: 'المحاضرات', title: 'العقل والنقل في بناء الوعي', desc: 'محاضرة فكرية تناقش دور العقلانية والمنهج العلمي في فهم النصوص والواقع المعاصر.', url: '', image: '', tags: 'محاضرات، فكر، وعي', fav: true },
+  { id: '4', category: 'التسجيلات', title: 'مقتطفات منبرية مختارة', desc: 'أضف رابط ملف صوتي بصيغة MP3 أو OGG للاستماع المباشر عبر المشغل السفلي.', url: '', image: '', tags: 'صوتيات، منبر، تسجيلات', fav: false },
+  { id: '5', category: 'الصور', title: 'بطاقة أرشيفية للصور والوثائق', desc: 'يمكنك إضافة صور ووثائق تاريخية مع تعليق وصفي لكل صورة.', url: '', image: '', tags: 'صور، أرشيف، وثائق', fav: false }
+];
+let state = { cat: 'الكل', search: '', items: [], portraits: { waeli: '', dev: '' }, tempItemImg: '' };
+function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2400); }
+function loadData() { try { const raw = localStorage.getItem(STORAGE_KEY); state.items = raw ? JSON.parse(raw) : [...DEFAULT_ITEMS]; } catch { state.items = [...DEFAULT_ITEMS]; } try { const p = localStorage.getItem(PORTRAITS_KEY); if (p) state.portraits = JSON.parse(p); } catch {} }
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items)); }
+function savePortraits() { localStorage.setItem(PORTRAITS_KEY, JSON.stringify(state.portraits)); }
+function renderPortraits() { document.getElementById('waeliFrame').innerHTML = state.portraits.waeli ? `<img src="${state.portraits.waeli}" alt="الشيخ أحمد الوائلي">` : `<span>الوائلي</span>`; document.getElementById('devFrame').innerHTML = state.portraits.dev ? `<img src="${state.portraits.dev}" alt="م. عباس هاني الشويلي">` : `<span>م. عباس</span>`; }
+function handlePortraitUpload(key, inputEl) { inputEl.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { state.portraits[key] = reader.result; savePortraits(); renderPortraits(); showToast('تم تحديث الصورة بنجاح'); }; reader.readAsDataURL(file); }); }
+function renderCats() { const bar = document.getElementById('catsBar'); bar.innerHTML = ''; CATEGORIES.forEach(cat => { const btn = document.createElement('button'); btn.className = 'cat-chip' + (state.cat === cat ? ' active' : ''); btn.textContent = cat; btn.onclick = () => { state.cat = cat; renderCats(); renderItems(); }; bar.appendChild(btn); }); }
+function renderItems() {
+  const list = document.getElementById('itemsList'); const q = state.search.trim().toLowerCase();
+  const filtered = state.items.filter(item => { const matchCat = state.cat === 'الكل' ? true : state.cat === 'المفضلة' ? !!item.fav : item.category === state.cat; const hay = `${item.title} ${item.desc} ${item.tags || ''} ${item.category}`.toLowerCase(); return matchCat && (!q || hay.includes(q)); });
+  if (!filtered.length) { list.innerHTML = `<div class="empty">لا توجد مواد مطابقة للعرض حالياً.</div>`; return; }
+  list.innerHTML = '';
+  filtered.forEach(item => {
+    const card = document.createElement('div'); card.className = 'card';
+    const imgSrc = item.image || (item.category === 'الصور' ? item.url : '');
+    const isAudio = item.category === 'التسجيلات' || /\.(mp3|ogg|wav|m4a)(\?|$)/i.test(item.url || '');
+    card.innerHTML = `<div class="card-top"><span class="card-cat">${escapeHtml(item.category)}</span><button class="fav-btn" onclick="toggleFav('${item.id}')">${item.fav ? '★ مفضلة' : '☆ مفضلة'}</button></div><div class="card-title">${escapeHtml(item.title)}</div><div class="card-desc">${escapeHtml(item.desc || '')}</div>${imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.title)}">` : ''}<div class="card-actions">${isAudio && item.url ? `<button class="btn btn-sm btn-gold" onclick="playAudio('${escapeAttr(item.url)}', '${escapeAttr(item.title)}')">▶ استماع</button>` : ''}${item.url && !isAudio ? `<a class="btn btn-sm btn-gold" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">فتح الرابط</a>` : ''}<button class="btn btn-sm" onclick="openItemModal('${item.id}')">تعديل</button><button class="btn btn-sm btn-danger" onclick="deleteItem('${item.id}')">حذف</button></div>`;
+    list.appendChild(card);
+  });
+}
+function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function escapeAttr(s) { return escapeHtml(s); }
+function toggleFav(id) { const it = state.items.find(x => x.id === id); if (!it) return; it.fav = !it.fav; saveData(); renderItems(); }
+function deleteItem(id) { state.items = state.items.filter(x => x.id !== id); saveData(); renderItems(); showToast('تم حذف المادة'); }
+function openItemModal(id = null) {
+  state.tempItemImg = ''; document.getElementById('itemImgFile').value = ''; const modal = document.getElementById('itemModal');
+  if (id) { const it = state.items.find(x => x.id === id); if (!it) return; document.getElementById('itemModalTitle').textContent = 'تعديل مادة'; document.getElementById('editId').value = it.id; document.getElementById('itemCat').value = it.category; document.getElementById('itemTitle').value = it.title; document.getElementById('itemDesc').value = it.desc || ''; document.getElementById('itemUrl').value = it.url || ''; document.getElementById('itemTags').value = it.tags || ''; state.tempItemImg = it.image || ''; }
+  else { document.getElementById('itemModalTitle').textContent = 'إضافة مادة جديدة'; document.getElementById('editId').value = ''; document.getElementById('itemCat').value = state.cat !== 'الكل' && state.cat !== 'المفضلة' ? state.cat : 'الكتب'; document.getElementById('itemTitle').value = ''; document.getElementById('itemDesc').value = ''; document.getElementById('itemUrl').value = ''; document.getElementById('itemTags').value = ''; }
+  modal.classList.add('show');
+}
+function closeItemModal() { document.getElementById('itemModal').classList.remove('show'); }
+document.getElementById('itemImgFile').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { state.tempItemImg = reader.result; }; reader.readAsDataURL(file); });
+function saveItem() {
+  const title = document.getElementById('itemTitle').value.trim();
+  if (!title) { showToast('يرجى إدخال العنوان أولاً'); return; }
+  const editId = document.getElementById('editId').value;
+  const payload = { id: editId || String(Date.now()), category: document.getElementById('itemCat').value, title, desc: document.getElementById('itemDesc').value.trim(), url: document.getElementById('itemUrl').value.trim(), image: state.tempItemImg, tags: document.getElementById('itemTags').value.trim(), fav: editId ? (state.items.find(x => x.id === editId)?.fav || false) : false };
+  state.items = editId ? state.items.map(x => x.id === editId ? payload : x) : [payload, ...state.items];
+  saveData(); closeItemModal(); renderItems(); showToast(editId ? 'تم تحديث المادة' : 'تمت إضافة المادة');
+}
+function playAudio(url, title) { const bar = document.getElementById('playerBar'); const audio = document.getElementById('audioEl'); document.getElementById('playerTitle').textContent = title; document.getElementById('playerStatus').textContent = 'جاري التحميل...'; bar.classList.add('show'); audio.src = url; audio.play().then(() => { document.getElementById('playerStatus').textContent = 'قيد التشغيل'; }).catch(() => { document.getElementById('playerStatus').textContent = 'تعذر تشغيل الرابط مباشرة'; }); }
+function togglePlay() { const audio = document.getElementById('audioEl'); if (!audio.src) return; if (audio.paused) { audio.play(); document.getElementById('playerStatus').textContent = 'قيد التشغيل'; } else { audio.pause(); document.getElementById('playerStatus').textContent = 'متوقف مؤقتاً'; } }
+function closePlayer() { const audio = document.getElementById('audioEl'); audio.pause(); audio.removeAttribute('src'); document.getElementById('playerBar').classList.remove('show'); }
+function openBackupModal() { const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits }; document.getElementById('backupText').value = JSON.stringify(data, null, 2); document.getElementById('backupModal').classList.add('show'); }
+function closeBackupModal() { document.getElementById('backupModal').classList.remove('show'); }
+function exportBackup() { const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits }; const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'waeli-archive-backup.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); showToast('تم تصدير النسخة الاحتياطية'); }
+document.getElementById('importFileInput').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(reader.result); if (Array.isArray(parsed.items)) { state.items = parsed.items; saveData(); } if (parsed.portraits) { state.portraits = { ...state.portraits, ...parsed.portraits }; savePortraits(); renderPortraits(); } renderItems(); openBackupModal(); showToast('تمت استعادة النسخة بنجاح'); } catch { showToast('ملف النسخة غير صالح'); } }; reader.readAsText(file); });
+document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderItems(); });
+handlePortraitUpload('waeli', document.getElementById('waeliPhotoInput'));
+handlePortraitUpload('dev', document.getElementById('devPhotoInput'));
+loadData(); renderPortraits(); renderCats(); renderItems();
+</script>
+</body>
+</html>
