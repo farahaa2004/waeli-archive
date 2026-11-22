@@ -48,6 +48,10 @@
   .card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
   .card-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; white-space: pre-line; }
   .card-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; display: block; }
+  .card-video, .card-yt { width: 100%; border-radius: 10px; margin-bottom: 10px; background: #0b0f14; display: block; border: 1px solid var(--border); }
+  .card-video { max-height: 240px; }
+  .card-yt { height: 210px; }
+  .media-note { font-size: 12px; color: var(--gold); margin-bottom: 10px; }
   .card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .fav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
   .player-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #121820; border-top: 1px solid rgba(212, 175, 55, 0.35); padding: 10px 14px; display: none; align-items: center; gap: 10px; z-index: 40; }
@@ -120,8 +124,8 @@
     <div class="field"><label>القسم</label><select id="itemCat"><option value="الكتب">الكتب</option><option value="البحوث">البحوث</option><option value="الصور">الصور</option><option value="المحاضرات">المحاضرات</option><option value="التسجيلات">التسجيلات</option></select></div>
     <div class="field"><label>العنوان</label><input type="text" id="itemTitle" placeholder="مثال: هوية التشيع / محاضرة في الفكر الإسلامي"></div>
     <div class="field"><label>الوصف أو ملخص المحتوى</label><textarea id="itemDesc" placeholder="اكتب نبذة أو ملاحظات أو نصاً مختصراً..."></textarea></div>
-    <div class="field"><label>رابط الملف أو الصوت أو الصورة (اختياري)</label><input type="url" id="itemUrl" placeholder="https://..."></div>
-    <div class="field"><label>أو اختر صورة من الهاتف (للمحاضرات أو الصور)</label><input type="file" id="itemImgFile" accept="image/*"></div>
+    <div class="field"><label>رابط الملف أو الصوت أو الفيديو أو يوتيوب (اختياري)</label><input type="url" id="itemUrl" placeholder="https://..."></div>
+    <div class="field"><label>أو اختر ملفاً من الهاتف (صورة، مقطع صوتي، أو فيديو)</label><input type="file" id="itemImgFile" accept="image/*,audio/*,video/*"></div>
     <div class="field"><label>كلمات مفتاحية (مفصولة بفاصلة)</label><input type="text" id="itemTags" placeholder="أدب، عقيدة، منبر، تاريخ"></div>
     <div class="modal-footer"><button class="btn" onclick="closeItemModal()">إلغاء</button><button class="btn btn-gold" id="saveItemBtn" onclick="saveItem()">حفظ</button></div>
   </div>
@@ -164,6 +168,7 @@ let state = {
   portraits: { waeli: '', dev: '' },
   tempItemImg: '',
   tempItemFile: null,
+  tempItemMediaKind: '',
   cloudReady: false
 };
 
@@ -236,9 +241,33 @@ function packDesc(desc, tags, fav) {
   return `${String(desc || '')}\n__WAELI_META__:${JSON.stringify(meta)}`;
 }
 
+function getYoutubeId(url) {
+  if (!url) return '';
+  const m = String(url).match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/|live\/)|youtu\.be\/)([A-Za-z0-9_-]{6,})/);
+  return m ? m[1] : '';
+}
+
+function isAudioSource(src, category = '') {
+  if (!src) return false;
+  if (/^data:audio\//i.test(src) || /\.(mp3|ogg|wav|m4a|aac|amr|opus)(\?|#|$)/i.test(src)) return true;
+  return category === 'التسجيلات' && !getYoutubeId(src) && !/\.(mp4|webm|mov|m3u8)(\?|#|$)/i.test(src) && !/^data:video\//i.test(src);
+}
+
+function isVideoSource(src) {
+  if (!src) return false;
+  return /^data:video\//i.test(src) || /\.(mp4|webm|mov|m3u8)(\?|#|$)/i.test(src);
+}
+
+function isImageSource(src) {
+  if (!src) return false;
+  if (/^data:image\//i.test(src)) return true;
+  if (/\.(jpg|jpeg|png|gif|webp|bmp|svg)(\?|#|$)/i.test(src)) return true;
+  return false;
+}
+
 async function uploadToStorage(file, folder = 'items') {
-  const ext = (file.name && file.name.includes('.')) ? file.name.split('.').pop().toLowerCase() : 'jpg';
-  const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'jpg';
+  const ext = (file.name && file.name.includes('.')) ? file.name.split('.').pop().toLowerCase() : 'bin';
+  const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'bin';
   const filePath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${filePath}`, {
     method: 'POST',
@@ -296,7 +325,6 @@ async function syncFromCloud() {
       state.items = loadedItems;
       saveLocal();
     } else if (state.items.length > 0) {
-      // مزامنة العناصر الافتراضية أو المحلية لأول مرة إذا كان الجدول فارغاً
       for (const it of [...state.items].reverse()) {
         await createRowInCloud(it);
       }
@@ -448,8 +476,29 @@ function renderItems() {
   filtered.forEach(item => {
     const card = document.createElement('div');
     card.className = 'card';
-    const imgSrc = item.image || (item.category === 'الصور' ? item.url : '');
-    const isAudio = item.category === 'التسجيلات' || /\.(mp3|ogg|wav|m4a)(\?|$)/i.test(item.url || '');
+
+    const ytId = getYoutubeId(item.url);
+    const primaryMedia = item.url || item.image || '';
+    const hasAudio = isAudioSource(item.url, item.category) || isAudioSource(item.image, item.category);
+    const audioSrc = isAudioSource(item.url, item.category) ? item.url : (isAudioSource(item.image, item.category) ? item.image : '');
+    const hasVideo = !ytId && (isVideoSource(item.url) || isVideoSource(item.image));
+    const videoSrc = isVideoSource(item.url) ? item.url : (isVideoSource(item.image) ? item.image : '');
+
+    let imgSrc = '';
+    if (isImageSource(item.image)) imgSrc = item.image;
+    else if (item.category === 'الصور' && isImageSource(item.url)) imgSrc = item.url;
+    else if (!hasAudio && !hasVideo && !ytId && item.image && !/\.(mp3|ogg|wav|m4a|aac|amr|opus|mp4|webm|mov)(\?|#|$)/i.test(item.image)) {
+      imgSrc = item.image;
+    }
+
+    const mediaHtml = `
+      ${ytId ? `<iframe class="card-yt" src="https://www.youtube.com/embed/${escapeAttr(ytId)}" allowfullscreen loading="lazy"></iframe>` : ''}
+      ${hasVideo && videoSrc ? `<video class="card-video" src="${escapeAttr(videoSrc)}" controls playsinline preload="metadata"></video>` : ''}
+      ${imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.title)}">` : ''}
+      ${hasAudio && audioSrc ? `<div class="media-note">مقطع صوتي جاهز للتشغيل</div>` : ''}
+      ${!ytId && !hasVideo && !hasAudio && !imgSrc && primaryMedia ? `<div class="media-note">مرفق خارجي متاح</div>` : ''}
+    `;
+
     card.innerHTML = `
       <div class="card-top">
         <span class="card-cat">${escapeHtml(item.category)}</span>
@@ -457,10 +506,10 @@ function renderItems() {
       </div>
       <div class="card-title">${escapeHtml(item.title)}</div>
       <div class="card-desc">${escapeHtml(item.desc || '')}</div>
-      ${imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.title)}">` : ''}
+      ${mediaHtml}
       <div class="card-actions">
-        ${isAudio && item.url ? `<button class="btn btn-sm btn-gold" onclick="playAudio('${escapeAttr(item.url)}', '${escapeAttr(item.title)}')">▶ استماع</button>` : ''}
-        ${item.url && !isAudio ? `<a class="btn btn-sm btn-gold" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">فتح الرابط</a>` : ''}
+        ${hasAudio && audioSrc ? `<button class="btn btn-sm btn-gold" onclick="playAudio('${escapeAttr(audioSrc)}', '${escapeAttr(item.title)}')">▶ استماع</button>` : ''}
+        ${item.url && !hasAudio && !hasVideo && !ytId ? `<a class="btn btn-sm btn-gold" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">فتح الرابط</a>` : ''}
         <button class="btn btn-sm" onclick="openItemModal('${escapeAttr(item.id)}')">تعديل</button>
         <button class="btn btn-sm btn-danger" onclick="deleteItem('${escapeAttr(item.id)}')">حذف</button>
       </div>`;
@@ -498,6 +547,7 @@ async function deleteItem(id) {
 function openItemModal(id = null) {
   state.tempItemImg = '';
   state.tempItemFile = null;
+  state.tempItemMediaKind = '';
   document.getElementById('itemImgFile').value = '';
   const modal = document.getElementById('itemModal');
   if (id) {
@@ -531,9 +581,18 @@ document.getElementById('itemImgFile').addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (!file) return;
   state.tempItemFile = file;
-  const reader = new FileReader();
-  reader.onload = () => { state.tempItemImg = reader.result; };
-  reader.readAsDataURL(file);
+  const mime = file.type || '';
+  if (mime.startsWith('audio/')) state.tempItemMediaKind = 'audio';
+  else if (mime.startsWith('video/')) state.tempItemMediaKind = 'video';
+  else state.tempItemMediaKind = 'image';
+
+  if (state.tempItemMediaKind === 'image') {
+    const reader = new FileReader();
+    reader.onload = () => { state.tempItemImg = reader.result; };
+    reader.readAsDataURL(file);
+  } else {
+    state.tempItemImg = '';
+  }
 });
 
 async function saveItem() {
@@ -547,12 +606,23 @@ async function saveItem() {
   const editId = document.getElementById('editId').value;
   const existingItem = editId ? state.items.find(x => x.id === editId) : null;
   let finalImage = state.tempItemImg || (existingItem ? existingItem.image : '') || '';
+  let finalUrl = document.getElementById('itemUrl').value.trim();
 
   if (state.tempItemFile) {
     try {
-      finalImage = await uploadToStorage(state.tempItemFile, 'items');
+      const uploadedUrl = await uploadToStorage(state.tempItemFile, 'items');
+      if (state.tempItemMediaKind === 'audio' || state.tempItemMediaKind === 'video') {
+        finalUrl = uploadedUrl;
+      } else {
+        finalImage = uploadedUrl;
+      }
     } catch {
-      // يبقى على صورة DataURL إذا تعذر الرفع
+      if (state.tempItemMediaKind !== 'image') {
+        btn.disabled = false;
+        btn.textContent = 'حفظ';
+        showToast('تعذر رفع الملف الصوتي أو الفيديو إلى المخزن');
+        return;
+      }
     }
   }
 
@@ -561,7 +631,7 @@ async function saveItem() {
     category: document.getElementById('itemCat').value,
     title,
     desc: document.getElementById('itemDesc').value.trim(),
-    url: document.getElementById('itemUrl').value.trim(),
+    url: finalUrl,
     image: finalImage,
     tags: document.getElementById('itemTags').value.trim(),
     fav: existingItem ? !!existingItem.fav : false
