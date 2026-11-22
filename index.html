@@ -18,7 +18,7 @@
   * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, "Segoe UI", Tahoma, sans-serif; }
   body { background: var(--bg); color: var(--text); min-height: 100vh; padding-bottom: 92px; }
   header { background: linear-gradient(160deg, #1b2631 0%, #10161d 100%); border-bottom: 1px solid var(--border); padding: 18px 16px 20px; }
-  .top-meta { display: flex; justify-content: flex-start; align-items: center; font-size: 12px; color: var(--gold); margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
+  .top-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--gold); margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
   .hero-title { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
   .hero-sub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
   .dev-badge { background: var(--gold-soft); border: 1px solid rgba(212, 175, 55, 0.35); color: var(--text); padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
@@ -33,6 +33,7 @@
   .search-input:focus { border-color: var(--gold); }
   .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
   .btn { padding: 10px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; }
+  .btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-gold { background: var(--gold); color: #111; border-color: var(--gold); }
   .btn-danger { background: rgba(224, 82, 82, 0.14); color: #ff8585; border-color: rgba(224, 82, 82, 0.35); }
   .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
@@ -45,7 +46,7 @@
   .card-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
   .card-cat { font-size: 11px; padding: 3px 9px; border-radius: 999px; background: var(--gold-soft); color: var(--gold); font-weight: 600; }
   .card-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
-  .card-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; }
+  .card-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 10px; white-space: pre-line; }
   .card-img { width: 100%; max-height: 220px; object-fit: cover; border-radius: 10px; margin-bottom: 10px; display: block; }
   .card-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .fav-btn { background: transparent; border: 1px solid var(--border); color: var(--gold); border-radius: 8px; padding: 6px 10px; cursor: pointer; font-size: 13px; }
@@ -71,7 +72,10 @@
 <body>
 <div class="toast" id="toast"></div>
 <header>
-  <div class="top-meta"><span>أرشيف وموسوعة الشيخ أحمد الوائلي (رحمه الله)</span></div>
+  <div class="top-meta">
+    <span>أرشيف وموسوعة الشيخ أحمد الوائلي (رحمه الله)</span>
+    <span id="syncStatus">جاري المزامنة...</span>
+  </div>
   <div class="hero-title">الذاكرة الفكرية والمنبرية للشيخ أحمد الوائلي</div>
   <div class="hero-sub">منصة منظمة لحفظ الكتب والبحوث والصور والمحاضرات والتسجيلات الصوتية.</div>
   <div class="dev-badge">إعداد وتطوير : المهندس عباس هاني عويد الشويلي</div>
@@ -119,7 +123,7 @@
     <div class="field"><label>رابط الملف أو الصوت أو الصورة (اختياري)</label><input type="url" id="itemUrl" placeholder="https://..."></div>
     <div class="field"><label>أو اختر صورة من الهاتف (للمحاضرات أو الصور)</label><input type="file" id="itemImgFile" accept="image/*"></div>
     <div class="field"><label>كلمات مفتاحية (مفصولة بفاصلة)</label><input type="text" id="itemTags" placeholder="أدب، عقيدة، منبر، تاريخ"></div>
-    <div class="modal-footer"><button class="btn" onclick="closeItemModal()">إلغاء</button><button class="btn btn-gold" onclick="saveItem()">حفظ</button></div>
+    <div class="modal-footer"><button class="btn" onclick="closeItemModal()">إلغاء</button><button class="btn btn-gold" id="saveItemBtn" onclick="saveItem()">حفظ</button></div>
   </div>
 </div>
 
@@ -138,6 +142,10 @@
 </div>
 
 <script>
+const SUPABASE_URL = 'https://pcegkiwvfrvwwwhjrbze.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_b2GjM-RAY2j76mMQAE14-A_BHE6wR7d';
+const BUCKET_NAME = 'archive-media';
+
 const STORAGE_KEY = 'waeli_archive_v7';
 const PORTRAITS_KEY = 'waeli_portraits_v7';
 const CATEGORIES = ['الكل', 'المفضلة', 'الكتب', 'البحوث', 'الصور', 'المحاضرات', 'التسجيلات'];
@@ -148,58 +156,544 @@ const DEFAULT_ITEMS = [
   { id: '4', category: 'التسجيلات', title: 'مقتطفات منبرية مختارة', desc: 'أضف رابط ملف صوتي بصيغة MP3 أو OGG للاستماع المباشر عبر المشغل السفلي.', url: '', image: '', tags: 'صوتيات، منبر، تسجيلات', fav: false },
   { id: '5', category: 'الصور', title: 'بطاقة أرشيفية للصور والوثائق', desc: 'يمكنك إضافة صور ووثائق تاريخية مع تعليق وصفي لكل صورة.', url: '', image: '', tags: 'صور، أرشيف، وثائق', fav: false }
 ];
-let state = { cat: 'الكل', search: '', items: [], portraits: { waeli: '', dev: '' }, tempItemImg: '' };
-function showToast(msg) { const t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.remove('show'), 2400); }
-function loadData() { try { const raw = localStorage.getItem(STORAGE_KEY); state.items = raw ? JSON.parse(raw) : [...DEFAULT_ITEMS]; } catch { state.items = [...DEFAULT_ITEMS]; } try { const p = localStorage.getItem(PORTRAITS_KEY); if (p) state.portraits = JSON.parse(p); } catch {} }
-function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items)); }
-function savePortraits() { localStorage.setItem(PORTRAITS_KEY, JSON.stringify(state.portraits)); }
-function renderPortraits() { document.getElementById('waeliFrame').innerHTML = state.portraits.waeli ? `<img src="${state.portraits.waeli}" alt="الشيخ أحمد الوائلي">` : `<span>الوائلي</span>`; document.getElementById('devFrame').innerHTML = state.portraits.dev ? `<img src="${state.portraits.dev}" alt="م. عباس هاني الشويلي">` : `<span>م. عباس</span>`; }
-function handlePortraitUpload(key, inputEl) { inputEl.addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { state.portraits[key] = reader.result; savePortraits(); renderPortraits(); showToast('تم تحديث الصورة بنجاح'); }; reader.readAsDataURL(file); }); }
-function renderCats() { const bar = document.getElementById('catsBar'); bar.innerHTML = ''; CATEGORIES.forEach(cat => { const btn = document.createElement('button'); btn.className = 'cat-chip' + (state.cat === cat ? ' active' : ''); btn.textContent = cat; btn.onclick = () => { state.cat = cat; renderCats(); renderItems(); }; bar.appendChild(btn); }); }
+
+let state = {
+  cat: 'الكل',
+  search: '',
+  items: [],
+  portraits: { waeli: '', dev: '' },
+  tempItemImg: '',
+  tempItemFile: null,
+  cloudReady: false
+};
+
+function setSyncStatus(text) {
+  const el = document.getElementById('syncStatus');
+  if (el) el.textContent = text;
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function loadLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    state.items = raw ? JSON.parse(raw) : [...DEFAULT_ITEMS];
+  } catch {
+    state.items = [...DEFAULT_ITEMS];
+  }
+  try {
+    const p = localStorage.getItem(PORTRAITS_KEY);
+    if (p) state.portraits = { ...state.portraits, ...JSON.parse(p) };
+  } catch {}
+}
+
+function saveLocal() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items)); } catch {}
+}
+
+function savePortraitsLocal() {
+  try { localStorage.setItem(PORTRAITS_KEY, JSON.stringify(state.portraits)); } catch {}
+}
+
+function getHeaders(extra = {}) {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    ...extra
+  };
+}
+
+function parsePackedDesc(rawDesc) {
+  const text = String(rawDesc || '');
+  const marker = '\n__WAELI_META__:';
+  const idx = text.indexOf(marker);
+  if (idx === -1) return { desc: text, tags: '', fav: false };
+  const desc = text.slice(0, idx);
+  try {
+    const meta = JSON.parse(text.slice(idx + marker.length));
+    return {
+      desc,
+      tags: Array.isArray(meta.tags) ? meta.tags.join('، ') : String(meta.tags || ''),
+      fav: Boolean(meta.fav)
+    };
+  } catch {
+    return { desc, tags: '', fav: false };
+  }
+}
+
+function packDesc(desc, tags, fav) {
+  const cleanTags = String(tags || '')
+    .split(/[,،]/)
+    .map(s => s.trim())
+    .filter(Boolean);
+  const meta = { tags: cleanTags, fav: Boolean(fav) };
+  return `${String(desc || '')}\n__WAELI_META__:${JSON.stringify(meta)}`;
+}
+
+async function uploadToStorage(file, folder = 'items') {
+  const ext = (file.name && file.name.includes('.')) ? file.name.split('.').pop().toLowerCase() : 'jpg';
+  const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'jpg';
+  const filePath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${filePath}`, {
+    method: 'POST',
+    headers: getHeaders({
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-upsert': 'true'
+    }),
+    body: file
+  });
+  if (!res.ok) throw new Error('فشل رفع الملف');
+  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${filePath}`;
+}
+
+async function syncFromCloud() {
+  setSyncStatus('جاري المزامنة...');
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?select=*&order=id.desc`, {
+      headers: getHeaders()
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    state.cloudReady = true;
+
+    const loadedItems = [];
+    let foundWaeli = '';
+    let foundDev = '';
+
+    for (const row of rows) {
+      if (row.category === '__PORTRAIT_WAELI__') {
+        if (row.image_url) foundWaeli = row.image_url;
+        continue;
+      }
+      if (row.category === '__PORTRAIT_DEV__') {
+        if (row.image_url) foundDev = row.image_url;
+        continue;
+      }
+      const parsed = parsePackedDesc(row.description);
+      loadedItems.push({
+        id: String(row.id),
+        category: row.category || 'الكتب',
+        title: row.title || '',
+        desc: parsed.desc,
+        url: row.file_url || '',
+        image: row.image_url || '',
+        tags: parsed.tags,
+        fav: parsed.fav
+      });
+    }
+
+    if (foundWaeli) state.portraits.waeli = foundWaeli;
+    if (foundDev) state.portraits.dev = foundDev;
+    if (foundWaeli || foundDev) savePortraitsLocal();
+
+    if (loadedItems.length > 0) {
+      state.items = loadedItems;
+      saveLocal();
+    } else if (state.items.length > 0) {
+      // مزامنة العناصر الافتراضية أو المحلية لأول مرة إذا كان الجدول فارغاً
+      for (const it of [...state.items].reverse()) {
+        await createRowInCloud(it);
+      }
+    }
+
+    setSyncStatus('متصل بقاعدة البيانات');
+    renderPortraits();
+    renderItems();
+  } catch (err) {
+    setSyncStatus('وضع محلي');
+  }
+}
+
+async function createRowInCloud(item) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items`, {
+    method: 'POST',
+    headers: getHeaders({
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }),
+    body: JSON.stringify({
+      title: item.title,
+      category: item.category,
+      description: packDesc(item.desc, item.tags, item.fav),
+      image_url: item.image || '',
+      file_url: item.url || ''
+    })
+  });
+  if (!res.ok) throw new Error('تعذر الحفظ');
+  const created = await res.json();
+  return Array.isArray(created) && created[0] ? String(created[0].id) : item.id;
+}
+
+async function updateRowInCloud(item) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?id=eq.${encodeURIComponent(item.id)}`, {
+    method: 'PATCH',
+    headers: getHeaders({
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation'
+    }),
+    body: JSON.stringify({
+      title: item.title,
+      category: item.category,
+      description: packDesc(item.desc, item.tags, item.fav),
+      image_url: item.image || '',
+      file_url: item.url || ''
+    })
+  });
+  if (!res.ok) throw new Error('تعذر التحديث');
+}
+
+async function deleteRowInCloud(id) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?id=eq.${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  if (!res.ok) throw new Error('تعذر الحذف');
+}
+
+async function savePortraitToCloud(key, publicUrl) {
+  const catName = key === 'waeli' ? '__PORTRAIT_WAELI__' : '__PORTRAIT_DEV__';
+  const label = key === 'waeli' ? 'صورة الشيخ أحمد الوائلي' : 'صورة م. عباس هاني الشويلي';
+  try {
+    const check = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?category=eq.${encodeURIComponent(catName)}&select=id`, {
+      headers: getHeaders()
+    });
+    const existing = check.ok ? await check.json() : [];
+    if (existing.length > 0) {
+      await fetch(`${SUPABASE_URL}/rest/v1/archive_items?id=eq.${encodeURIComponent(existing[0].id)}`, {
+        method: 'PATCH',
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ image_url: publicUrl, title: label })
+      });
+    } else {
+      await fetch(`${SUPABASE_URL}/rest/v1/archive_items`, {
+        method: 'POST',
+        headers: getHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          title: label,
+          category: catName,
+          description: '',
+          image_url: publicUrl,
+          file_url: ''
+        })
+      });
+    }
+  } catch {}
+}
+
+function renderPortraits() {
+  document.getElementById('waeliFrame').innerHTML = state.portraits.waeli
+    ? `<img src="${escapeAttr(state.portraits.waeli)}" alt="الشيخ أحمد الوائلي">`
+    : `<span>الوائلي</span>`;
+  document.getElementById('devFrame').innerHTML = state.portraits.dev
+    ? `<img src="${escapeAttr(state.portraits.dev)}" alt="م. عباس هاني الشويلي">`
+    : `<span>م. عباس</span>`;
+}
+
+function handlePortraitUpload(key, inputEl) {
+  inputEl.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      state.portraits[key] = reader.result;
+      savePortraitsLocal();
+      renderPortraits();
+    };
+    reader.readAsDataURL(file);
+
+    try {
+      const publicUrl = await uploadToStorage(file, 'portraits');
+      state.portraits[key] = publicUrl;
+      savePortraitsLocal();
+      renderPortraits();
+      await savePortraitToCloud(key, publicUrl);
+      showToast('تم تحديث الصورة وحفظها سحابياً');
+    } catch {
+      showToast('تم تحديث الصورة محلياً');
+    }
+  });
+}
+
+function renderCats() {
+  const bar = document.getElementById('catsBar');
+  bar.innerHTML = '';
+  CATEGORIES.forEach(cat => {
+    const btn = document.createElement('button');
+    btn.className = 'cat-chip' + (state.cat === cat ? ' active' : '');
+    btn.textContent = cat;
+    btn.onclick = () => { state.cat = cat; renderCats(); renderItems(); };
+    bar.appendChild(btn);
+  });
+}
+
 function renderItems() {
-  const list = document.getElementById('itemsList'); const q = state.search.trim().toLowerCase();
-  const filtered = state.items.filter(item => { const matchCat = state.cat === 'الكل' ? true : state.cat === 'المفضلة' ? !!item.fav : item.category === state.cat; const hay = `${item.title} ${item.desc} ${item.tags || ''} ${item.category}`.toLowerCase(); return matchCat && (!q || hay.includes(q)); });
-  if (!filtered.length) { list.innerHTML = `<div class="empty">لا توجد مواد مطابقة للعرض حالياً.</div>`; return; }
+  const list = document.getElementById('itemsList');
+  const q = state.search.trim().toLowerCase();
+  const filtered = state.items.filter(item => {
+    const matchCat = state.cat === 'الكل' ? true : state.cat === 'المفضلة' ? !!item.fav : item.category === state.cat;
+    const hay = `${item.title} ${item.desc} ${item.tags || ''} ${item.category}`.toLowerCase();
+    return matchCat && (!q || hay.includes(q));
+  });
+  if (!filtered.length) {
+    list.innerHTML = `<div class="empty">لا توجد مواد مطابقة للعرض حالياً.</div>`;
+    return;
+  }
   list.innerHTML = '';
   filtered.forEach(item => {
-    const card = document.createElement('div'); card.className = 'card';
+    const card = document.createElement('div');
+    card.className = 'card';
     const imgSrc = item.image || (item.category === 'الصور' ? item.url : '');
     const isAudio = item.category === 'التسجيلات' || /\.(mp3|ogg|wav|m4a)(\?|$)/i.test(item.url || '');
-    card.innerHTML = `<div class="card-top"><span class="card-cat">${escapeHtml(item.category)}</span><button class="fav-btn" onclick="toggleFav('${item.id}')">${item.fav ? '★ مفضلة' : '☆ مفضلة'}</button></div><div class="card-title">${escapeHtml(item.title)}</div><div class="card-desc">${escapeHtml(item.desc || '')}</div>${imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.title)}">` : ''}<div class="card-actions">${isAudio && item.url ? `<button class="btn btn-sm btn-gold" onclick="playAudio('${escapeAttr(item.url)}', '${escapeAttr(item.title)}')">▶ استماع</button>` : ''}${item.url && !isAudio ? `<a class="btn btn-sm btn-gold" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">فتح الرابط</a>` : ''}<button class="btn btn-sm" onclick="openItemModal('${item.id}')">تعديل</button><button class="btn btn-sm btn-danger" onclick="deleteItem('${item.id}')">حذف</button></div>`;
+    card.innerHTML = `
+      <div class="card-top">
+        <span class="card-cat">${escapeHtml(item.category)}</span>
+        <button class="fav-btn" onclick="toggleFav('${escapeAttr(item.id)}')">${item.fav ? '★ مفضلة' : '☆ مفضلة'}</button>
+      </div>
+      <div class="card-title">${escapeHtml(item.title)}</div>
+      <div class="card-desc">${escapeHtml(item.desc || '')}</div>
+      ${imgSrc ? `<img class="card-img" src="${escapeAttr(imgSrc)}" alt="${escapeAttr(item.title)}">` : ''}
+      <div class="card-actions">
+        ${isAudio && item.url ? `<button class="btn btn-sm btn-gold" onclick="playAudio('${escapeAttr(item.url)}', '${escapeAttr(item.title)}')">▶ استماع</button>` : ''}
+        ${item.url && !isAudio ? `<a class="btn btn-sm btn-gold" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">فتح الرابط</a>` : ''}
+        <button class="btn btn-sm" onclick="openItemModal('${escapeAttr(item.id)}')">تعديل</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteItem('${escapeAttr(item.id)}')">حذف</button>
+      </div>`;
     list.appendChild(card);
   });
 }
-function escapeHtml(s) { return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
 function escapeAttr(s) { return escapeHtml(s); }
-function toggleFav(id) { const it = state.items.find(x => x.id === id); if (!it) return; it.fav = !it.fav; saveData(); renderItems(); }
-function deleteItem(id) { state.items = state.items.filter(x => x.id !== id); saveData(); renderItems(); showToast('تم حذف المادة'); }
+
+async function toggleFav(id) {
+  const it = state.items.find(x => x.id === id);
+  if (!it) return;
+  it.fav = !it.fav;
+  saveLocal();
+  renderItems();
+  if (state.cloudReady && /^\d+$/.test(it.id)) {
+    try { await updateRowInCloud(it); } catch {}
+  }
+}
+
+async function deleteItem(id) {
+  const target = state.items.find(x => x.id === id);
+  state.items = state.items.filter(x => x.id !== id);
+  saveLocal();
+  renderItems();
+  showToast('تم حذف المادة');
+  if (state.cloudReady && target && /^\d+$/.test(target.id)) {
+    try { await deleteRowInCloud(target.id); } catch {}
+  }
+}
+
 function openItemModal(id = null) {
-  state.tempItemImg = ''; document.getElementById('itemImgFile').value = ''; const modal = document.getElementById('itemModal');
-  if (id) { const it = state.items.find(x => x.id === id); if (!it) return; document.getElementById('itemModalTitle').textContent = 'تعديل مادة'; document.getElementById('editId').value = it.id; document.getElementById('itemCat').value = it.category; document.getElementById('itemTitle').value = it.title; document.getElementById('itemDesc').value = it.desc || ''; document.getElementById('itemUrl').value = it.url || ''; document.getElementById('itemTags').value = it.tags || ''; state.tempItemImg = it.image || ''; }
-  else { document.getElementById('itemModalTitle').textContent = 'إضافة مادة جديدة'; document.getElementById('editId').value = ''; document.getElementById('itemCat').value = state.cat !== 'الكل' && state.cat !== 'المفضلة' ? state.cat : 'الكتب'; document.getElementById('itemTitle').value = ''; document.getElementById('itemDesc').value = ''; document.getElementById('itemUrl').value = ''; document.getElementById('itemTags').value = ''; }
+  state.tempItemImg = '';
+  state.tempItemFile = null;
+  document.getElementById('itemImgFile').value = '';
+  const modal = document.getElementById('itemModal');
+  if (id) {
+    const it = state.items.find(x => x.id === id);
+    if (!it) return;
+    document.getElementById('itemModalTitle').textContent = 'تعديل مادة';
+    document.getElementById('editId').value = it.id;
+    document.getElementById('itemCat').value = it.category;
+    document.getElementById('itemTitle').value = it.title;
+    document.getElementById('itemDesc').value = it.desc || '';
+    document.getElementById('itemUrl').value = it.url || '';
+    document.getElementById('itemTags').value = it.tags || '';
+    state.tempItemImg = it.image || '';
+  } else {
+    document.getElementById('itemModalTitle').textContent = 'إضافة مادة جديدة';
+    document.getElementById('editId').value = '';
+    document.getElementById('itemCat').value = state.cat !== 'الكل' && state.cat !== 'المفضلة' ? state.cat : 'الكتب';
+    document.getElementById('itemTitle').value = '';
+    document.getElementById('itemDesc').value = '';
+    document.getElementById('itemUrl').value = '';
+    document.getElementById('itemTags').value = '';
+  }
   modal.classList.add('show');
 }
-function closeItemModal() { document.getElementById('itemModal').classList.remove('show'); }
-document.getElementById('itemImgFile').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { state.tempItemImg = reader.result; }; reader.readAsDataURL(file); });
-function saveItem() {
+
+function closeItemModal() {
+  document.getElementById('itemModal').classList.remove('show');
+}
+
+document.getElementById('itemImgFile').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  state.tempItemFile = file;
+  const reader = new FileReader();
+  reader.onload = () => { state.tempItemImg = reader.result; };
+  reader.readAsDataURL(file);
+});
+
+async function saveItem() {
   const title = document.getElementById('itemTitle').value.trim();
   if (!title) { showToast('يرجى إدخال العنوان أولاً'); return; }
+
+  const btn = document.getElementById('saveItemBtn');
+  btn.disabled = true;
+  btn.textContent = 'جاري الحفظ...';
+
   const editId = document.getElementById('editId').value;
-  const payload = { id: editId || String(Date.now()), category: document.getElementById('itemCat').value, title, desc: document.getElementById('itemDesc').value.trim(), url: document.getElementById('itemUrl').value.trim(), image: state.tempItemImg, tags: document.getElementById('itemTags').value.trim(), fav: editId ? (state.items.find(x => x.id === editId)?.fav || false) : false };
-  state.items = editId ? state.items.map(x => x.id === editId ? payload : x) : [payload, ...state.items];
-  saveData(); closeItemModal(); renderItems(); showToast(editId ? 'تم تحديث المادة' : 'تمت إضافة المادة');
+  const existingItem = editId ? state.items.find(x => x.id === editId) : null;
+  let finalImage = state.tempItemImg || (existingItem ? existingItem.image : '') || '';
+
+  if (state.tempItemFile) {
+    try {
+      finalImage = await uploadToStorage(state.tempItemFile, 'items');
+    } catch {
+      // يبقى على صورة DataURL إذا تعذر الرفع
+    }
+  }
+
+  const payload = {
+    id: editId || ('local_' + Date.now()),
+    category: document.getElementById('itemCat').value,
+    title,
+    desc: document.getElementById('itemDesc').value.trim(),
+    url: document.getElementById('itemUrl').value.trim(),
+    image: finalImage,
+    tags: document.getElementById('itemTags').value.trim(),
+    fav: existingItem ? !!existingItem.fav : false
+  };
+
+  try {
+    if (editId && /^\d+$/.test(editId)) {
+      await updateRowInCloud(payload);
+    } else {
+      const cloudId = await createRowInCloud(payload);
+      payload.id = cloudId;
+    }
+    state.cloudReady = true;
+    setSyncStatus('متصل بقاعدة البيانات');
+  } catch {
+    setSyncStatus('وضع محلي');
+  }
+
+  state.items = editId
+    ? state.items.map(x => x.id === editId ? payload : x)
+    : [payload, ...state.items];
+
+  saveLocal();
+  closeItemModal();
+  renderItems();
+  btn.disabled = false;
+  btn.textContent = 'حفظ';
+  showToast(editId ? 'تم تحديث المادة' : 'تمت إضافة المادة');
 }
-function playAudio(url, title) { const bar = document.getElementById('playerBar'); const audio = document.getElementById('audioEl'); document.getElementById('playerTitle').textContent = title; document.getElementById('playerStatus').textContent = 'جاري التحميل...'; bar.classList.add('show'); audio.src = url; audio.play().then(() => { document.getElementById('playerStatus').textContent = 'قيد التشغيل'; }).catch(() => { document.getElementById('playerStatus').textContent = 'تعذر تشغيل الرابط مباشرة'; }); }
-function togglePlay() { const audio = document.getElementById('audioEl'); if (!audio.src) return; if (audio.paused) { audio.play(); document.getElementById('playerStatus').textContent = 'قيد التشغيل'; } else { audio.pause(); document.getElementById('playerStatus').textContent = 'متوقف مؤقتاً'; } }
-function closePlayer() { const audio = document.getElementById('audioEl'); audio.pause(); audio.removeAttribute('src'); document.getElementById('playerBar').classList.remove('show'); }
-function openBackupModal() { const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits }; document.getElementById('backupText').value = JSON.stringify(data, null, 2); document.getElementById('backupModal').classList.add('show'); }
-function closeBackupModal() { document.getElementById('backupModal').classList.remove('show'); }
-function exportBackup() { const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits }; const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'waeli-archive-backup.json'; a.click(); setTimeout(() => URL.revokeObjectURL(url), 1000); showToast('تم تصدير النسخة الاحتياطية'); }
-document.getElementById('importFileInput').addEventListener('change', (e) => { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { try { const parsed = JSON.parse(reader.result); if (Array.isArray(parsed.items)) { state.items = parsed.items; saveData(); } if (parsed.portraits) { state.portraits = { ...state.portraits, ...parsed.portraits }; savePortraits(); renderPortraits(); } renderItems(); openBackupModal(); showToast('تمت استعادة النسخة بنجاح'); } catch { showToast('ملف النسخة غير صالح'); } }; reader.readAsText(file); });
-document.getElementById('searchInput').addEventListener('input', (e) => { state.search = e.target.value; renderItems(); });
+
+function playAudio(url, title) {
+  const bar = document.getElementById('playerBar');
+  const audio = document.getElementById('audioEl');
+  document.getElementById('playerTitle').textContent = title;
+  document.getElementById('playerStatus').textContent = 'جاري التحميل...';
+  bar.classList.add('show');
+  audio.src = url;
+  audio.play().then(() => {
+    document.getElementById('playerStatus').textContent = 'قيد التشغيل';
+  }).catch(() => {
+    document.getElementById('playerStatus').textContent = 'تعذر تشغيل الرابط مباشرة';
+  });
+}
+
+function togglePlay() {
+  const audio = document.getElementById('audioEl');
+  if (!audio.src) return;
+  if (audio.paused) {
+    audio.play();
+    document.getElementById('playerStatus').textContent = 'قيد التشغيل';
+  } else {
+    audio.pause();
+    document.getElementById('playerStatus').textContent = 'متوقف مؤقتاً';
+  }
+}
+
+function closePlayer() {
+  const audio = document.getElementById('audioEl');
+  audio.pause();
+  audio.removeAttribute('src');
+  document.getElementById('playerBar').classList.remove('show');
+}
+
+function openBackupModal() {
+  const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits };
+  document.getElementById('backupText').value = JSON.stringify(data, null, 2);
+  document.getElementById('backupModal').classList.add('show');
+}
+
+function closeBackupModal() {
+  document.getElementById('backupModal').classList.remove('show');
+}
+
+function exportBackup() {
+  const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'waeli-archive-backup.json';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  showToast('تم تصدير النسخة الاحتياطية');
+}
+
+document.getElementById('importFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      if (Array.isArray(parsed.items)) {
+        state.items = parsed.items;
+        saveLocal();
+        if (state.cloudReady) {
+          for (const it of [...state.items].reverse()) {
+            try {
+              if (/^\d+$/.test(it.id)) await updateRowInCloud(it);
+              else it.id = await createRowInCloud(it);
+            } catch {}
+          }
+          saveLocal();
+        }
+      }
+      if (parsed.portraits) {
+        state.portraits = { ...state.portraits, ...parsed.portraits };
+        savePortraitsLocal();
+        renderPortraits();
+      }
+      renderItems();
+      openBackupModal();
+      showToast('تمت استعادة النسخة بنجاح');
+    } catch {
+      showToast('ملف النسخة غير صالح');
+    }
+  };
+  reader.readAsText(file);
+});
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  state.search = e.target.value;
+  renderItems();
+});
+
 handlePortraitUpload('waeli', document.getElementById('waeliPhotoInput'));
 handlePortraitUpload('dev', document.getElementById('devPhotoInput'));
-loadData(); renderPortraits(); renderCats(); renderItems();
+loadLocal();
+renderPortraits();
+renderCats();
+renderItems();
+syncFromCloud();
 </script>
 </body>
 </html>
