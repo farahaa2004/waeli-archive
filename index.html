@@ -37,22 +37,27 @@
   .top-meta { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--gold); margin-bottom: 12px; gap: 8px; flex-wrap: wrap; }
   .hero-title { font-size: 20px; font-weight: 700; line-height: 1.4; margin-bottom: 6px; }
   .hero-sub { font-size: 13px; color: var(--muted); line-height: 1.5; margin-bottom: 14px; }
-  .dev-badge { background: var(--gold-soft); border: 1px solid rgba(212, 175, 55, 0.35); color: var(--text); padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px; }
+  .dev-badge { background: var(--gold-soft); border: 1px solid rgba(212, 175, 55, 0.35); color: var(--text); padding: 10px 12px; border-radius: 12px; font-size: 13px; font-weight: 600; margin-bottom: 16px; cursor: pointer; user-select: none; -webkit-tap-highlight-color: transparent; }
   .dual-portraits { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-  .portrait-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px; text-align: center; cursor: pointer; }
+  .portrait-box { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 10px; text-align: center; }
+  .portrait-box.editable { cursor: pointer; }
   .portrait-frame { width: 84px; height: 84px; margin: 0 auto 8px; border-radius: 50%; border: 2px solid var(--gold); overflow: hidden; display: flex; align-items: center; justify-content: center; background: var(--surface-2); font-size: 18px; color: var(--gold); font-weight: 700; }
   .portrait-frame img { width: 100%; height: 100%; object-fit: cover; display: block; }
   .portrait-label { font-size: 12px; font-weight: 600; }
-  .portrait-hint { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .portrait-hint { font-size: 11px; color: var(--muted); margin-top: 2px; display: none; }
+  body.is-admin .portrait-hint { display: block; }
   .toolbar { padding: 14px 16px 6px; display: flex; flex-direction: column; gap: 10px; }
   .search-input { width: 100%; padding: 11px 14px; border-radius: 12px; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: 14px; outline: none; }
   .search-input:focus { border-color: var(--gold); }
-  .action-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .action-row { display: none; grid-template-columns: 1fr 1fr; gap: 8px; }
+  body.is-admin .action-row { display: grid; }
   .btn { padding: 10px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface-2); color: var(--text); font-size: 13px; font-weight: 600; cursor: pointer; text-align: center; text-decoration: none; }
   .btn:disabled { opacity: 0.6; cursor: not-allowed; }
   .btn-gold { background: var(--gold); color: #111; border-color: var(--gold); }
   .btn-danger { background: rgba(224, 82, 82, 0.14); color: #ff8585; border-color: rgba(224, 82, 82, 0.35); }
   .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 8px; }
+  .admin-only-inline { display: none; }
+  body.is-admin .admin-only-inline { display: inline-block; }
   .cats { display: flex; gap: 8px; overflow-x: auto; padding: 10px 16px; scrollbar-width: none; }
   .cats::-webkit-scrollbar { display: none; }
   .cat-chip { white-space: nowrap; padding: 8px 14px; border-radius: 999px; background: var(--surface); border: 1px solid var(--border); color: var(--muted); font-size: 13px; cursor: pointer; }
@@ -94,19 +99,19 @@
 <header>
   <div class="top-meta">
     <span>أرشيف وموسوعة الشيخ أحمد الوائلي (رحمه الله)</span>
-    <span id="syncStatus">جاري المزامنة...</span>
+    <span id="syncStatus">وضع العرض</span>
   </div>
   <div class="hero-title">الذاكرة الفكرية والمنبرية للشيخ أحمد الوائلي</div>
   <div class="hero-sub">منصة منظمة لحفظ الكتب والبحوث والصور والمحاضرات والتسجيلات الصوتية.</div>
-  <div class="dev-badge">إعداد وتطوير : المهندس عباس هاني عويد الشويلي</div>
+  <div class="dev-badge" id="devBadge" onclick="handleSecretBadgeTap()">إعداد وتطوير : المهندس عباس هاني عويد الشويلي</div>
   <div class="dual-portraits">
-    <div class="portrait-box" onclick="document.getElementById('waeliPhotoInput').click()">
+    <div class="portrait-box" id="waeliBox" onclick="onPortraitBoxClick('waeli', 'waeliPhotoInput')">
       <div class="portrait-frame" id="waeliFrame"><span>الوائلي</span></div>
       <div class="portrait-label">الشيخ أحمد الوائلي</div>
       <div class="portrait-hint">اضغط لتغيير الصورة</div>
       <input type="file" id="waeliPhotoInput" accept="image/*" hidden>
     </div>
-    <div class="portrait-box" onclick="document.getElementById('devPhotoInput').click()">
+    <div class="portrait-box" id="devBox" onclick="onPortraitBoxClick('dev', 'devPhotoInput')">
       <div class="portrait-frame" id="devFrame"><span>م. عباس</span></div>
       <div class="portrait-label">م. عباس هاني الشويلي</div>
       <div class="portrait-hint">اضغط لتغيير صورتك</div>
@@ -131,6 +136,22 @@
   <button class="btn btn-sm btn-gold" id="togglePlayBtn" onclick="togglePlay()">إيقاف/تشغيل</button>
   <button class="btn btn-sm" onclick="closePlayer()">إغلاق</button>
   <audio id="audioEl"></audio>
+</div>
+
+<div class="modal-backdrop" id="adminAuthModal">
+  <div class="modal">
+    <div class="modal-title" id="adminAuthTitle">دخول وضع الإدارة</div>
+    <p class="card-desc" id="adminAuthDesc">أدخل رمز المشرف لتفعيل أدوات الإضافة والتعديل والحذف والنسخ الاحتياطي وتغيير الصور.</p>
+    <div class="field" id="adminPassField">
+      <label>الرمز السري</label>
+      <input type="password" id="adminPassInput" placeholder="أدخل الرمز السري" autocomplete="off">
+    </div>
+    <div class="modal-footer">
+      <button class="btn" onclick="closeAdminAuthModal()">إلغاء</button>
+      <button class="btn btn-danger admin-only-inline" onclick="lockAdminMode()">قفل وضع الإدارة</button>
+      <button class="btn btn-gold" id="confirmAdminBtn" onclick="confirmAdminPass()">تأكيد</button>
+    </div>
+  </div>
 </div>
 
 <div class="modal-backdrop" id="itemModal">
@@ -168,7 +189,10 @@ const BUCKET_NAME = 'archive-media';
 
 const STORAGE_KEY = 'waeli_archive_v7';
 const PORTRAITS_KEY = 'waeli_portraits_v7';
-const CATEGORIES = ['الكل', 'المفضلة', 'الكتب', 'البحوث', 'الصور', 'المحاضرات', 'التسجيلات'];
+const ADMIN_MODE_KEY = 'waeli_owner_mode_v1';
+const ADMIN_PASSCODE = 'apas196@';
+
+const CATEGORIES = ['الكتب', 'البحوث', 'الصور', 'المحاضرات', 'التسجيلات', 'الكل', 'المفضلة'];
 const DEFAULT_ITEMS = [
   { id: '1', category: 'الكتب', title: 'هوية التشيع', desc: 'من أبرز مؤلفات الشيخ أحمد الوائلي في تحليل الجذور الفكرية والتاريخية والاجتماعية.', url: '', image: '', tags: 'كتب، فكر، تاريخ', fav: true },
   { id: '2', category: 'البحوث', title: 'المنهج الخطابي عند الشيخ الوائلي', desc: 'دراسة حول الجمع بين البلاغة الأدبية والعمق المعرفي والمقاربة الموضوعية في الخطاب المنبري.', url: '', image: '', tags: 'بحوث، أدب، خطاب', fav: false },
@@ -177,7 +201,16 @@ const DEFAULT_ITEMS = [
   { id: '5', category: 'الصور', title: 'بطاقة أرشيفية للصور والوثائق', desc: 'يمكنك إضافة صور ووثائق تاريخية مع تعليق وصفي لكل صورة.', url: '', image: '', tags: 'صور، أرشيف، وثائق', fav: false }
 ];
 
+function loadAdminFlag() {
+  try {
+    return localStorage.getItem(ADMIN_MODE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 let state = {
+  isAdmin: loadAdminFlag(),
   cat: 'الكل',
   search: '',
   items: [],
@@ -185,8 +218,95 @@ let state = {
   tempItemImg: '',
   tempItemFile: null,
   tempItemMediaKind: '',
-  cloudReady: false
+  cloudReady: false,
+  tapCount: 0,
+  tapTimer: null
 };
+
+function applyAdminUI() {
+  document.body.classList.toggle('is-admin', state.isAdmin);
+  document.getElementById('waeliBox').classList.toggle('editable', state.isAdmin);
+  document.getElementById('devBox').classList.toggle('editable', state.isAdmin);
+  setSyncStatus(
+    state.isAdmin
+      ? (state.cloudReady ? 'وضع الإدارة - متصل' : 'وضع الإدارة')
+      : 'وضع العرض'
+  );
+  if (!state.isAdmin) {
+    closeItemModal();
+    closeBackupModal();
+  }
+}
+
+function handleSecretBadgeTap() {
+  state.tapCount += 1;
+  clearTimeout(state.tapTimer);
+  state.tapTimer = setTimeout(() => { state.tapCount = 0; }, 1200);
+  if (state.tapCount >= 3) {
+    state.tapCount = 0;
+    clearTimeout(state.tapTimer);
+    openAdminAuthModal();
+  }
+}
+
+function openAdminAuthModal() {
+  const modal = document.getElementById('adminAuthModal');
+  const input = document.getElementById('adminPassInput');
+  const title = document.getElementById('adminAuthTitle');
+  const desc = document.getElementById('adminAuthDesc');
+  const passField = document.getElementById('adminPassField');
+  const confirmBtn = document.getElementById('confirmAdminBtn');
+
+  input.value = '';
+  if (state.isAdmin) {
+    title.textContent = 'إعدادات وضع الإدارة';
+    desc.textContent = 'وضع الإدارة مفعّل حالياً على هذا الجهاز. يمكنك قفله وإرجاعه إلى وضع العرض فقط.';
+    passField.style.display = 'none';
+    confirmBtn.style.display = 'none';
+  } else {
+    title.textContent = 'تفعيل وضع الإدارة';
+    desc.textContent = 'أدخل الرمز السري لإظهار أدوات الإضافة والتعديل والحذف والنسخ الاحتياطي وتغيير الصور.';
+    passField.style.display = 'block';
+    confirmBtn.style.display = 'inline-block';
+  }
+  modal.classList.add('show');
+  if (!state.isAdmin) {
+    setTimeout(() => input.focus(), 80);
+  }
+}
+
+function closeAdminAuthModal() {
+  document.getElementById('adminAuthModal').classList.remove('show');
+}
+
+function confirmAdminPass() {
+  const val = document.getElementById('adminPassInput').value;
+  if (val === ADMIN_PASSCODE) {
+    state.isAdmin = true;
+    try { localStorage.setItem(ADMIN_MODE_KEY, '1'); } catch {}
+    closeAdminAuthModal();
+    applyAdminUI();
+    renderItems();
+    showToast('تم تفعيل وضع الإدارة');
+  } else {
+    showToast('الرمز السري غير صحيح');
+  }
+}
+
+function lockAdminMode() {
+  state.isAdmin = false;
+  try { localStorage.removeItem(ADMIN_MODE_KEY); } catch {}
+  closeAdminAuthModal();
+  applyAdminUI();
+  renderItems();
+  showToast('تم قفل وضع الإدارة والعودة لوضع العرض');
+}
+
+function onPortraitBoxClick(key, inputId) {
+  if (!state.isAdmin) return;
+  const el = document.getElementById(inputId);
+  if (el) el.click();
+}
 
 function setSyncStatus(text) {
   const el = document.getElementById('syncStatus');
@@ -282,6 +402,7 @@ function isImageSource(src) {
 }
 
 async function uploadToStorage(file, folder = 'items') {
+  if (!state.isAdmin) throw new Error('غير مسموح');
   const ext = (file.name && file.name.includes('.')) ? file.name.split('.').pop().toLowerCase() : 'bin';
   const safeExt = ext.replace(/[^a-z0-9]/g, '') || 'bin';
   const filePath = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${safeExt}`;
@@ -298,7 +419,7 @@ async function uploadToStorage(file, folder = 'items') {
 }
 
 async function syncFromCloud() {
-  setSyncStatus('جاري المزامنة...');
+  if (!state.isAdmin) setSyncStatus('جاري التحميل...');
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?select=*&order=id.desc`, {
       headers: getHeaders()
@@ -340,21 +461,22 @@ async function syncFromCloud() {
     if (loadedItems.length > 0) {
       state.items = loadedItems;
       saveLocal();
-    } else if (state.items.length > 0) {
+    } else if (state.isAdmin && state.items.length > 0) {
       for (const it of [...state.items].reverse()) {
-        await createRowInCloud(it);
+        try { await createRowInCloud(it); } catch {}
       }
     }
 
-    setSyncStatus('متصل بقاعدة البيانات');
+    applyAdminUI();
     renderPortraits();
     renderItems();
   } catch (err) {
-    setSyncStatus('وضع محلي');
+    applyAdminUI();
   }
 }
 
 async function createRowInCloud(item) {
+  if (!state.isAdmin) throw new Error('غير مسموح');
   const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items`, {
     method: 'POST',
     headers: getHeaders({
@@ -375,6 +497,7 @@ async function createRowInCloud(item) {
 }
 
 async function updateRowInCloud(item) {
+  if (!state.isAdmin) throw new Error('غير مسموح');
   const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?id=eq.${encodeURIComponent(item.id)}`, {
     method: 'PATCH',
     headers: getHeaders({
@@ -393,6 +516,7 @@ async function updateRowInCloud(item) {
 }
 
 async function deleteRowInCloud(id) {
+  if (!state.isAdmin) throw new Error('غير مسموح');
   const res = await fetch(`${SUPABASE_URL}/rest/v1/archive_items?id=eq.${encodeURIComponent(id)}`, {
     method: 'DELETE',
     headers: getHeaders()
@@ -401,6 +525,7 @@ async function deleteRowInCloud(id) {
 }
 
 async function savePortraitToCloud(key, publicUrl) {
+  if (!state.isAdmin) return;
   const catName = key === 'waeli' ? '__PORTRAIT_WAELI__' : '__PORTRAIT_DEV__';
   const label = key === 'waeli' ? 'صورة الشيخ أحمد الوائلي' : 'صورة م. عباس هاني الشويلي';
   try {
@@ -441,6 +566,7 @@ function renderPortraits() {
 
 function handlePortraitUpload(key, inputEl) {
   inputEl.addEventListener('change', async (e) => {
+    if (!state.isAdmin) { e.target.value = ''; return; }
     const file = e.target.files[0];
     if (!file) return;
     const reader = new FileReader();
@@ -461,6 +587,7 @@ function handlePortraitUpload(key, inputEl) {
     } catch {
       showToast('تم تحديث الصورة محلياً');
     }
+    e.target.value = '';
   });
 }
 
@@ -526,8 +653,8 @@ function renderItems() {
       <div class="card-actions">
         ${hasAudio && audioSrc ? `<button class="btn btn-sm btn-gold" onclick="playAudio('${escapeAttr(audioSrc)}', '${escapeAttr(item.title)}')">▶ استماع</button>` : ''}
         ${item.url && !hasAudio && !hasVideo && !ytId ? `<a class="btn btn-sm btn-gold" href="${escapeAttr(item.url)}" target="_blank" rel="noopener">فتح الرابط</a>` : ''}
-        <button class="btn btn-sm" onclick="openItemModal('${escapeAttr(item.id)}')">تعديل</button>
-        <button class="btn btn-sm btn-danger" onclick="deleteItem('${escapeAttr(item.id)}')">حذف</button>
+        <button class="btn btn-sm admin-only-inline" onclick="openItemModal('${escapeAttr(item.id)}')">تعديل</button>
+        <button class="btn btn-sm btn-danger admin-only-inline" onclick="deleteItem('${escapeAttr(item.id)}')">حذف</button>
       </div>`;
     list.appendChild(card);
   });
@@ -538,18 +665,16 @@ function escapeHtml(s) {
 }
 function escapeAttr(s) { return escapeHtml(s); }
 
-async function toggleFav(id) {
+function toggleFav(id) {
   const it = state.items.find(x => x.id === id);
   if (!it) return;
   it.fav = !it.fav;
   saveLocal();
   renderItems();
-  if (state.cloudReady && /^\d+$/.test(it.id)) {
-    try { await updateRowInCloud(it); } catch {}
-  }
 }
 
 async function deleteItem(id) {
+  if (!state.isAdmin) return;
   const target = state.items.find(x => x.id === id);
   state.items = state.items.filter(x => x.id !== id);
   saveLocal();
@@ -561,6 +686,7 @@ async function deleteItem(id) {
 }
 
 function openItemModal(id = null) {
+  if (!state.isAdmin) return;
   state.tempItemImg = '';
   state.tempItemFile = null;
   state.tempItemMediaKind = '';
@@ -594,6 +720,7 @@ function closeItemModal() {
 }
 
 document.getElementById('itemImgFile').addEventListener('change', (e) => {
+  if (!state.isAdmin) { e.target.value = ''; return; }
   const file = e.target.files[0];
   if (!file) return;
   state.tempItemFile = file;
@@ -612,6 +739,7 @@ document.getElementById('itemImgFile').addEventListener('change', (e) => {
 });
 
 async function saveItem() {
+  if (!state.isAdmin) return;
   const title = document.getElementById('itemTitle').value.trim();
   if (!title) { showToast('يرجى إدخال العنوان أولاً'); return; }
 
@@ -661,9 +789,9 @@ async function saveItem() {
       payload.id = cloudId;
     }
     state.cloudReady = true;
-    setSyncStatus('متصل بقاعدة البيانات');
+    applyAdminUI();
   } catch {
-    setSyncStatus('وضع محلي');
+    applyAdminUI();
   }
 
   state.items = editId
@@ -712,6 +840,7 @@ function closePlayer() {
 }
 
 function openBackupModal() {
+  if (!state.isAdmin) return;
   const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits };
   document.getElementById('backupText').value = JSON.stringify(data, null, 2);
   document.getElementById('backupModal').classList.add('show');
@@ -722,6 +851,7 @@ function closeBackupModal() {
 }
 
 function exportBackup() {
+  if (!state.isAdmin) return;
   const data = { developer: 'المهندس عباس هاني عويد الشويلي', items: state.items, portraits: state.portraits };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
@@ -734,6 +864,7 @@ function exportBackup() {
 }
 
 document.getElementById('importFileInput').addEventListener('change', (e) => {
+  if (!state.isAdmin) { e.target.value = ''; return; }
   const file = e.target.files[0];
   if (!file) return;
   const reader = new FileReader();
@@ -764,8 +895,13 @@ document.getElementById('importFileInput').addEventListener('change', (e) => {
     } catch {
       showToast('ملف النسخة غير صالح');
     }
+    e.target.value = '';
   };
   reader.readAsText(file);
+});
+
+document.getElementById('adminPassInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') confirmAdminPass();
 });
 
 document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -773,6 +909,7 @@ document.getElementById('searchInput').addEventListener('input', (e) => {
   renderItems();
 });
 
+applyAdminUI();
 handlePortraitUpload('waeli', document.getElementById('waeliPhotoInput'));
 handlePortraitUpload('dev', document.getElementById('devPhotoInput'));
 loadLocal();
